@@ -1,24 +1,37 @@
 import os
+import re
+import csv
 import time
 import json
 import requests
 import argparse
+import datetime
 
 from lxml import etree
 from itertools import islice
 
 
+last_number_pattern = re.compile(r"(?<=&page=)\d+")
+
+
 def gen_children_url(url):
     """
-
+    (?<=&page=)\d+
+    //*[@id='quotes_content_left_lb_LastPage']
     :param url:
     :return:
     """
     response = requests.get(url)
     tree = etree.HTML(response.content)
-    for element in tree.xpath("//li/a[@class='pagerlink']"):
-        if element is not None and element.text and not (element.text.startswith('next') or element.text.startswith('last')):
-            yield element.attrib['href']
+    for element in tree.xpath("//*[@id='quotes_content_left_lb_LastPage']"):
+        if element is not None:
+            last_url = element.attrib['href']
+            page_numbers = re.findall(last_number_pattern, last_url)
+            if page_numbers:
+                last_page = int(page_numbers[0])
+                for i in range(2, last_page+1):
+                    url_to_scrap = "{0}&page={1}".format(url, i)
+                    yield url_to_scrap
 
 
 def gen_page_records(url):
@@ -88,12 +101,11 @@ def batched(gen, batch_size):
         yield batch
 
 
-def serialize(ticker, root_dir, batch_size=10):
+def serialize_json(ticker, root_dir, batch_size=100):
     gen = gen_options(ticker)
     total = 0
     for items in batched(gen, batch_size=batch_size):
-        timestr = time.strftime("%Y_%b_%dT%H:%M:%S")
-        file_name = "{0}_{1}.json".format(ticker, timestr)
+        file_name = "{0}_{1}.json".format(ticker, datetime.datetime.now().isoformat())
         output_path = os.path.join(root_dir, ticker)
         output_file_path = os.path.join(output_path, file_name)
         if not os.path.exists(output_path):
@@ -108,11 +120,41 @@ def serialize(ticker, root_dir, batch_size=10):
     print("Scraped a total of %s records for %s" % (total, ticker))
 
 
+def serialize_csv(ticker, root_dir, batch_size=100):
+    gen = gen_options(ticker)
+    total = 0
+
+    for items in batched(gen, batch_size=batch_size):
+        if items:
+            file_name = "{0}_{1}.csv".format(ticker, datetime.datetime.now().isoformat())
+            output_path = os.path.join(root_dir, ticker)
+            output_file_path = os.path.join(output_path, file_name)
+            if not os.path.exists(output_path):
+                os.mkdir(output_path)
+
+            with open(output_file_path, 'a') as csv_file:
+                headers = list(items[0])
+                # print("Headers are %s" % headers)
+                writer = csv.DictWriter(csv_file, delimiter=',', lineterminator='\n', fieldnames=headers)
+
+                # if not os.path.exists(output_file_path):
+                writer.writeheader()  # file doesn't exist yet, write a header
+
+                for item in items:
+                    writer.writerow(item)
+                print("Scraped %s records" % len(items))
+
+            total += len(items)
+    print("Scraped a total of %s records for %s" % (total, ticker))
+
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--ticker", help="Ticker Symbol. Options will be scraped for this ticker symbol")
     parser.add_argument("-o", "--odir", help="Output directory where you want the output files to be generated")
-    parser.add_argument("-b", "--batch_size", help="Batch Size of output file", default=100)
+    parser.add_argument("-b", "--batch_size", help="Batch Size of output file", default=100, type=int)
+    parser.add_argument("-s", "--serialize", help="Serialization format", default="csv")
 
     args = parser.parse_args()
     if args.ticker is None:
@@ -124,7 +166,13 @@ def main():
     if not os.path.exists(args.odir):
         raise IOError("Path {0} does not exists".format(args.odir))
 
-    serialize(args.ticker, args.odir, args.batch_size)
+    print("Serialization format is %s. You can override this by -s parameter." % args.serialize.upper())
+    print("Batch Size is %s" % args.batch_size)
+
+    if args.serialize.lower() == "json":
+        serialize_json(args.ticker, args.odir, args.batch_size)
+    else:
+        serialize_csv(args.ticker, args.odir, args.batch_size)
 
 
 if __name__ == '__main__':

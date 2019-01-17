@@ -50,3 +50,41 @@ You should see the `json` files generated.
 cd /Users/abhishek/options_data
 ls -lrt
 ```
+
+## Code Changes
+
+To get the latest code, go the project directory where you have cloned this repository. 
+```bash
+cd <PROJ_DIR>
+```
+
+```bash
+git pull origin master
+```
+
+## Arguments
+
+#### Serialization format (-s)
+You have an option to output the data either in a CSV file or a JSON file. 
+Default format is CSV. 
+
+#### Batch Size (-b)
+Define how many records should each csv or json file should have.  
+
+
+## Examples
+1. To get all the option chain for XOM in a batch_size of 1000 and `csv` file format. 
+This will make sure that each CSV file has 1000 records in it. 
+The last file will have the remaining records
+```bash
+python scraper.py -t XOM -o /Users/abhishek/options_data -b 1000 -s csv
+```
+
+
+2. To get all option chain data for MSFT in a batch_size of 10 and `json` file format. 
+```bash
+python scraper.py -t MSFT -o /Users/abhishek/options_data -b 10 -s json
+```
+
+
+
