@@ -6,6 +6,7 @@ import json
 import requests
 import argparse
 import datetime
+import urllib.parse
 
 from lxml import etree
 from itertools import islice
@@ -70,13 +71,14 @@ def get_text(elt):
     return etree.tostring(elt, method="text", encoding="unicode").strip()
 
 
-def gen_options(ticker):
+def gen_options(ticker, **kwargs):
     """
-
+    excode=None, money="all", expir=None, callput=None
     :param TICKER:
     :return:
     """
-    url = "https://www.nasdaq.com/symbol/{0}/option-chain?excode=cbo&money=all".format(ticker.lower())
+    params = urllib.parse.urlencode(dict((k,v) for k,v in kwargs.items() if v is not None))
+    url = "https://www.nasdaq.com/symbol/{0}/option-chain?{1}".format(ticker.lower(), params)
     print("Scraping data from URL %s" % url)
     for rec in gen_page_records(url):
         yield rec
@@ -101,8 +103,8 @@ def batched(gen, batch_size):
         yield batch
 
 
-def serialize_json(ticker, root_dir, batch_size=100):
-    gen = gen_options(ticker)
+def serialize_json(ticker, root_dir, batch_size=100, **kwargs):
+    gen = gen_options(ticker, **kwargs)
     total = 0
     for items in batched(gen, batch_size=batch_size):
         file_name = "{0}_{1}.json".format(ticker, datetime.datetime.now().isoformat())
@@ -120,8 +122,8 @@ def serialize_json(ticker, root_dir, batch_size=100):
     print("Scraped a total of %s records for %s" % (total, ticker))
 
 
-def serialize_csv(ticker, root_dir, batch_size=100):
-    gen = gen_options(ticker)
+def serialize_csv(ticker, root_dir, batch_size=100, **kwargs):
+    gen = gen_options(ticker, **kwargs)
     total = 0
 
     for items in batched(gen, batch_size=batch_size):
@@ -150,10 +152,18 @@ def serialize_csv(ticker, root_dir, batch_size=100):
 
 
 def main():
+    """
+    excode=None, money="all", expir=None, callput=None
+    :return:
+    """
     parser = argparse.ArgumentParser()
-    parser.add_argument("-t", "--ticker", help="Ticker Symbol. Options will be scraped for this ticker symbol")
-    parser.add_argument("-o", "--odir", help="Output directory where you want the output files to be generated")
-    parser.add_argument("-b", "--batch_size", help="Batch Size of output file", default=100, type=int)
+    parser.add_argument("-t", "--ticker", help="Ticker Symbol")
+    parser.add_argument("-o", "--odir", help="Output directory")
+    parser.add_argument("-b", "--batch_size", help="Batch Size", default=100, type=int)
+    parser.add_argument("-c", "--callput", help="call, put or leave it blank")
+    parser.add_argument("-m", "--money", help="all, in, out, near", default="all")
+    parser.add_argument("-e", "--excode", help="excode")
+    parser.add_argument("-x", "--expir", help="week,stan,quart,cebo")
     parser.add_argument("-s", "--serialize", help="Serialization format", default="csv")
 
     args = parser.parse_args()
@@ -166,13 +176,20 @@ def main():
     if not os.path.exists(args.odir):
         raise IOError("Path {0} does not exists".format(args.odir))
 
+    kwargs = {
+        "money": args.money.lower(),
+        "expir": args.expir.lower() if args.expir else None,
+        "excode": args.excode.lower() if args.excode else None,
+        "callput": args.callput.lower() if args.callput else None
+    }
+
     print("Serialization format is %s. You can override this by -s parameter." % args.serialize.upper())
     print("Batch Size is %s" % args.batch_size)
 
     if args.serialize.lower() == "json":
-        serialize_json(args.ticker, args.odir, args.batch_size)
+        serialize_json(args.ticker, args.odir, args.batch_size, **kwargs)
     else:
-        serialize_csv(args.ticker, args.odir, args.batch_size)
+        serialize_csv(args.ticker, args.odir, args.batch_size, **kwargs)
 
 
 if __name__ == '__main__':

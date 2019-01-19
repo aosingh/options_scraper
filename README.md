@@ -63,13 +63,42 @@ git pull origin master
 ```
 
 ## Arguments
+The following command will explain all the options.
+
+```bash
+python scraper.py --help
+```
+
+```text
+usage: scraper.py [-h] [-t TICKER] [-o ODIR] [-b BATCH_SIZE] [-c CALLPUT]
+                  [-m MONEY] [-e EXCODE] [-x EXPIR] [-s SERIALIZE]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -t TICKER, --ticker TICKER
+                        Ticker Symbol
+  -o ODIR, --odir ODIR  Output directory
+  -b BATCH_SIZE, --batch_size BATCH_SIZE
+                        Batch Size
+  -c CALLPUT, --callput CALLPUT
+                        call, put or leave it blank
+  -m MONEY, --money MONEY
+                        all, in, out, near
+  -e EXCODE, --excode EXCODE
+                        excode
+  -x EXPIR, --expir EXPIR
+                        week,stan,quart,cebo
+  -s SERIALIZE, --serialize SERIALIZE
+                        Serialization format
+```
+
 
 #### Serialization format (-s)
 You have an option to output the data either in a CSV file or a JSON file. 
 Default format is CSV. 
 
 #### Batch Size (-b)
-Define how many records should each csv or json file should have.  
+Define how many records each csv or json file should have.
 
 
 ## Examples
@@ -84,6 +113,16 @@ python scraper.py -t XOM -o /Users/abhishek/options_data -b 1000 -s csv
 2. To get all option chain data for MSFT in a batch_size of 10 and `json` file format. 
 ```bash
 python scraper.py -t MSFT -o /Users/abhishek/options_data -b 10 -s json
+```
+
+3. To get all `put` options with weekly expiry.
+```bash
+python scraper.py -t XOM -e cbo -c put -x week -o /Users/abhishek/options_data
+```
+
+4. To get all `call` options with `cebo` expiry.
+```bash
+python scraper.py -t XOM -c call -x cebo -o /Users/abhishek/options_data
 ```
 
 
