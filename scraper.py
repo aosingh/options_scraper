@@ -15,12 +15,18 @@ from itertools import islice
 last_number_pattern = re.compile(r"(?<=&page=)\d+")
 
 
-def gen_children_url(url):
+def gen_pages(url):
     """
-    (?<=&page=)\d+
-    //*[@id='quotes_content_left_lb_LastPage']
-    :param url:
-    :return:
+    Description:
+        If for a given query the results are paginated then
+        we should traverse the pages too. This function exactly does that.
+
+    Args:
+        URL - The main URL
+
+    Returns:
+        Generator - All the other pages in the search results if present.
+
     """
     response = requests.get(url)
     tree = etree.HTML(response.content)
@@ -37,9 +43,18 @@ def gen_children_url(url):
 
 def gen_page_records(url):
     """
+    Description:
+        Scrape Options data from the given URL.
+        This is a 2 step process.
+            1. First, extract the headers
+            2. Then, the data rows.
 
-    :param url:
-    :return:
+    Args:
+        url: NASDAQ URL to scrape
+
+    Returns:
+        Generator: Data records each as a dictionary
+
     """
     response = requests.get(url)
     tree = etree.HTML(response.content)
@@ -67,23 +82,38 @@ def get_text(elt):
     """
     Description:
         Returns the text from tags.
+
+    Args:
+        elt: An lxml etree element
+
+    Returns:
+        Text within the element.
     """
     return etree.tostring(elt, method="text", encoding="unicode").strip()
 
 
 def gen_options(ticker, **kwargs):
     """
-    excode=None, money="all", expir=None, callput=None
-    :param TICKER:
-    :return:
+    Description:
+        Constructs a NASDAQ specific URL for the given Ticker Symbol and options.
+        Then traverses the option data found at the URL. If there are more pages,
+        the data records on the pages are traversed too.
+
+    Args:
+        ticker: A valid Ticker Symbol
+        **kwargs: Mapping of query parameters that should be passed to the NASDAQ URL
+
+    Returns:
+        Generator: Options Data till the last page is reached.
+
     """
-    params = urllib.parse.urlencode(dict((k,v) for k,v in kwargs.items() if v is not None))
+    params = urllib.parse.urlencode(dict((k, v) for k, v in kwargs.items() if v is not None))
     url = "https://www.nasdaq.com/symbol/{0}/option-chain?{1}".format(ticker.lower(), params)
     print("Scraping data from URL %s" % url)
     for rec in gen_page_records(url):
         yield rec
 
-    for url in gen_children_url(url):
+    for url in gen_pages(url):
         print("Scraping data from URL %s" % url)
         for rec in gen_page_records(url):
             yield rec
@@ -91,10 +121,14 @@ def gen_options(ticker, **kwargs):
 
 def batched(gen, batch_size):
     """
+    Description:
+        A util to slice a generator in a batch_size.
+        The consumer can consume the generator in batches of given batch_size
 
-    :param gen:
-    :param batch_size:
-    :return:
+    Args:
+        gen: The generator to be consumed.
+        batch_size: Consume batches of what size ?
+
     """
     while True:
         batch = list(islice(gen, 0, batch_size))
@@ -104,6 +138,26 @@ def batched(gen, batch_size):
 
 
 def serialize_json(ticker, root_dir, batch_size=100, **kwargs):
+    """
+    Description:
+        Serializes scraped options data as CSV values. Uses the `batch_size`
+        parameter to decide the number of output files and distributes the total
+        records equally amongst all the files. The last file will have the
+        remaining records if the distribution is not even.
+
+    Args:
+        ticker: Ticker symbol. Please provide a valid Ticker Symbol.
+                As of now, there is no mechanism to check if the ticker symbol is valid.
+                So, it is the user's responsibility to pass the correct symbol.
+
+        root_dir: Output directory where the files should be generated.
+
+        batch_size: Each CSV file will have a maximum of `batch_size` records.
+
+        **kwargs: Pass additional options which are defined in the `main()` entry-point
+                  of this script.
+
+    """
     gen = gen_options(ticker, **kwargs)
     total = 0
     for items in batched(gen, batch_size=batch_size):
@@ -123,6 +177,26 @@ def serialize_json(ticker, root_dir, batch_size=100, **kwargs):
 
 
 def serialize_csv(ticker, root_dir, batch_size=100, **kwargs):
+    """
+    Description:
+        Serializes scraped options data as CSV values. Uses the `batch_size`
+        parameter to decide the number of output files and distributes the total
+        records equally amongst all the files. The last file will have the
+        remaining records if the distribution is not even.
+
+    Args:
+        ticker: Ticker symbol. Please provide a valid Ticker Symbol.
+                As of now, there is no mechanism to check if the ticker symbol is valid.
+                So, it is the user's responsibility to pass the correct symbol.
+
+        root_dir: Output directory where the files should be generated.
+
+        batch_size: Each CSV file will have a maximum of `batch_size` records.
+
+        **kwargs: Pass additional options which are defined in the `main()` entry-point
+                  of this script.
+
+    """
     gen = gen_options(ticker, **kwargs)
     total = 0
 
@@ -150,11 +224,12 @@ def serialize_csv(ticker, root_dir, batch_size=100, **kwargs):
     print("Scraped a total of %s records for %s" % (total, ticker))
 
 
-
 def main():
     """
-    excode=None, money="all", expir=None, callput=None
-    :return:
+    Description:
+        Entry-point to the script.
+        Type `python <script_name.py> --help` to get details about the arguments.
+
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--ticker", help="Ticker Symbol")
@@ -165,6 +240,8 @@ def main():
     parser.add_argument("-e", "--excode", help="excode")
     parser.add_argument("-x", "--expir", help="week,stan,quart,cebo")
     parser.add_argument("-s", "--serialize", help="Serialization format", default="csv")
+
+    #     excode = None, money = "all", expir = None, callput = None
 
     args = parser.parse_args()
     if args.ticker is None:
