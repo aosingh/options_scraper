@@ -1,6 +1,6 @@
 # NASDAQ Options chain Scraper
 
-## !WARNING - This scraper only works for the old NASDAQ url https://old.nasdaq.com
+## WARNING - This scraper works only for the old NASDAQ url https://old.nasdaq.com
 
 ## Steps to run the script.
 
