@@ -1,8 +1,10 @@
 # NASDAQ Options chain Scraper
 
+## !WARNING - This scraper only works for the old NASDAQ url https://old.nasdaq.com
+
 ## Steps to run the script.
 
-1. Go the directory where you want to work from. 
+1. Go the directory where you want to work from.
 ```bash
 cd <ROOT_DIR>
 ```
@@ -15,7 +17,7 @@ cd options_scraper
 
 ```
 
-3. Create a virtual environment by typing the following command. 
+3. Create a virtual environment by typing the following command.
 
 ```bash
 virtualenv --python=python3 .venv
@@ -34,16 +36,16 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-6. Run the script by passing the `ticker symbol` and `output directory`. 
-Please make sure that the directory location passed as input to this script exists. 
-Else an `IOError` will be raise. 
+6. Run the script by passing the `ticker symbol` and `output directory`.
+Please make sure that the directory location passed as input to this script exists.
+Else an `IOError` will be raise.
 
 ```bash
 python scraper.py -t XOM -o /Users/abhishek/options_data
 
 ```
 
-7. Now, go to the directory where the output files have been generated. 
+7. Now, go to the directory where the output files have been generated.
 You should see the `json` files generated.
 
 ```bash
@@ -53,7 +55,7 @@ ls -lrt
 
 ## Code Changes
 
-To get the latest code, go the project directory where you have cloned this repository. 
+To get the latest code, go the project directory where you have cloned this repository.
 ```bash
 cd <PROJ_DIR>
 ```
@@ -94,23 +96,23 @@ optional arguments:
 
 
 #### Serialization format (-s)
-You have an option to output the data either in a CSV file or a JSON file. 
-Default format is CSV. 
+You have an option to output the data either in a CSV file or a JSON file.
+Default format is CSV.
 
 #### Batch Size (-b)
 Define how many records each csv or json file should have.
 
 
 ## Examples
-1. To get all the option chain for XOM in a batch_size of 1000 and `csv` file format. 
-This will make sure that each CSV file has 1000 records in it. 
+1. To get all the option chain for XOM in a batch_size of 1000 and `csv` file format.
+This will make sure that each CSV file has 1000 records in it.
 The last file will have the remaining records
 ```bash
 python scraper.py -t XOM -o /Users/abhishek/options_data -b 1000 -s csv
 ```
 
 
-2. To get all option chain data for MSFT in a batch_size of 10 and `json` file format. 
+2. To get all option chain data for MSFT in a batch_size of 10 and `json` file format.
 ```bash
 python scraper.py -t MSFT -o /Users/abhishek/options_data -b 10 -s json
 ```
@@ -124,6 +126,3 @@ python scraper.py -t XOM -e cbo -c put -x week -o /Users/abhishek/options_data
 ```bash
 python scraper.py -t XOM -c call -x cebo -o /Users/abhishek/options_data
 ```
-
-
-

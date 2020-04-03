@@ -13,7 +13,7 @@ from itertools import islice
 
 
 last_number_pattern = re.compile(r"(?<=&page=)\d+")
-
+nasdaq_base_url = 'https://old.nasdaq.com'
 
 def gen_pages(url):
     """
@@ -97,18 +97,20 @@ def gen_options(ticker, **kwargs):
     Description:
         Constructs a NASDAQ specific URL for the given Ticker Symbol and options.
         Then traverses the option data found at the URL. If there are more pages,
-        the data records on the pages are traversed too.
+        the data records on the pages are scraped too.
 
     Args:
         ticker: A valid Ticker Symbol
         **kwargs: Mapping of query parameters that should be passed to the NASDAQ URL
 
     Returns:
-        Generator: Options Data till the last page is reached.
+        Generator: Each options data record as a python dictionary till
+        the last page is reached.
 
     """
     params = urllib.parse.urlencode(dict((k, v) for k, v in kwargs.items() if v is not None))
-    url = "https://www.nasdaq.com/symbol/{0}/option-chain?{1}".format(ticker.lower(), params)
+    url = f"{nasdaq_base_url}/symbol/{ticker.lower()}/option-chain?{params}"
+
     print("Scraping data from URL %s" % url)
     for rec in gen_page_records(url):
         yield rec
@@ -140,7 +142,7 @@ def batched(gen, batch_size):
 def serialize_json(ticker, root_dir, batch_size=100, **kwargs):
     """
     Description:
-        Serializes scraped options data as CSV values. Uses the `batch_size`
+        Serializes scraped options data records as JSON values. Uses the `batch_size`
         parameter to decide the number of output files and distributes the total
         records equally amongst all the files. The last file will have the
         remaining records if the distribution is not even.
@@ -152,7 +154,7 @@ def serialize_json(ticker, root_dir, batch_size=100, **kwargs):
 
         root_dir: Output directory where the files should be generated.
 
-        batch_size: Each CSV file will have a maximum of `batch_size` records.
+        batch_size: Each JSON file will have a maximum of `batch_size` records.
 
         **kwargs: Pass additional options which are defined in the `main()` entry-point
                   of this script.
@@ -271,4 +273,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
