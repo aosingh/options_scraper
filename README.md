@@ -10,6 +10,7 @@ pip install options-scraper
 
 ## Console Script
 
+Use this script to scrape records and save them either in CSV or JSON format.
 
 ```bash
 options-scraper --help
@@ -49,7 +50,7 @@ Default format is CSV.
 Define how many records each csv or json file should have.
 
 
-## Examples
+### Examples
 1. To get all the option chain for XOM in a batch_size of 1000 and `csv` file format.
 This will make sure that each CSV file has 1000 records in it.
 The last file will have the remaining records
@@ -73,3 +74,67 @@ options-scraper -t XOM -e cbo -c put -x week -o /Users/abhishek/options_data
 ```bash
 options-scraper -t XOM -c call -x cebo -o /Users/abhishek/options_data
 ```
+
+## API
+
+Sometimes, you may want to access the scraped data records ( as python objects ) directly and not save them to files.
+
+### Usage
+
+```python
+
+from options_scraper.scraper import NASDAQOptionsScraper
+from options_scraper.utils import batched
+
+scraper = NASDAQOptionsScraper()
+ticker_symbol = 'XOM'
+kwargs = { "money": 'all',
+           "expir": 'week',
+           "excode": None,
+           "callput": None
+         }
+
+records_generator = scraper(ticker_symbol, **kwargs)
+
+# Either access each record individually as shown below
+for item in records_generator:
+    print(item)
+
+# Or use the batched util to get a list of items
+for items in batched(records_generator, batch_size=100):
+    print(items)
+
+```
+
+### Output
+
+Each scraped record will have the following structure
+
+
+```python
+
+{'Ask': '23.20',
+ 'Bid': '18.50',
+ 'Calls': 'Apr 24, 2020',
+ 'Chg': '',
+ 'Last': '19.40',
+ 'Open Int': '15',
+ 'Puts': 'Apr 24, 2020',
+ 'Root': 'XOM',
+ 'Strike': '60',
+ 'Vol': '0'}
+
+{'Ask': '28.20',
+ 'Bid': '23.50',
+ 'Calls': 'Apr 24, 2020',
+ 'Chg': '',
+ 'Last': '29.67',
+ 'Open Int': '3',
+ 'Puts': 'Apr 24, 2020',
+ 'Root': 'XOM',
+ 'Strike': '65',
+ 'Vol': '0'}
+
+```
+
+
