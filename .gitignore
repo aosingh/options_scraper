@@ -1,3 +1,6 @@
 .venv
 .idea
 *.pyc
+options_scraper.egg-info
+dist
+build
