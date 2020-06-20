@@ -54,7 +54,7 @@ setup(
     version=VERSION,
     entry_points={
         'console_scripts': [
-            'options-scraper= options_scraper.scraper:main'
+            'options-scraper=options_scraper.cli:main'
         ]
     },
     packages=find_packages(exclude=("tests",)),
